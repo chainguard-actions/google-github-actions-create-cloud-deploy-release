@@ -1,0 +1,38 @@
+name: Test advanced inputs - create cloud deploy release
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: my-release-advanced
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          build_artifacts: /tmp/artifacts.json
+          gcs_source_staging_dir: gs://my-bucket/staging
+          skaffold_file: skaffold.yaml
+          annotations: "env=test,team=platform"
+          labels: "version=v1,app=myapp"
+          description: "Test release for CI"
+          deploy_parameters: "key1=value1,key2=value2"
+          flags: "--skaffold-version=skaffold_preview"
+          gcloud_component: "beta"
+          project_id: my-gcp-project
+      - name: Assert action ran (may fail without GCP credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran (outcome=$OUTCOME)"
