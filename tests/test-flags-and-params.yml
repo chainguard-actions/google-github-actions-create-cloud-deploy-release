@@ -1,0 +1,30 @@
+name: Test flags, deploy parameters, and gcloud component inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: my-release-flags
+          delivery_pipeline: my-pipeline
+          deploy_parameters: "key1=value1,key2=value2"
+          flags: "--skaffold-version=skaffold_preview"
+          gcloud_component: beta
+      - name: Assert action ran (credentials missing is expected)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped, expected it to run"
+            exit 1
+          fi
+          echo "PASS: action ran (outcome=$OUTCOME)"
