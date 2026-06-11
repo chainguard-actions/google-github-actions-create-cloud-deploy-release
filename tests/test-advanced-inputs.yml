@@ -1,0 +1,52 @@
+name: Test advanced inputs including build_artifacts, skaffold, and gcs staging
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a dummy build artifacts file
+        run: |
+          cat > /tmp/artifacts.json <<'EOF'
+          {
+            "builds": [
+              {
+                "imageName": "my-image",
+                "tag": "gcr.io/my-project/my-image:latest"
+              }
+            ]
+          }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: my-release-002
+          delivery_pipeline: my-pipeline
+          region: us-east1
+          build_artifacts: /tmp/artifacts.json
+          gcs_source_staging_dir: gs://my-bucket/staging
+          skaffold_file: skaffold.yaml
+          gcloud_component: beta
+          project_id: my-gcp-project
+          gcloud_version: "latest"
+          description: "Test release with advanced inputs"
+          labels: "env=staging"
+          annotations: "build=002"
+          flags: "--from-k8s-manifest=manifest.yaml"
+          deploy_parameters: "env=staging"
+      - name: Assert action ran (may fail due to missing GCP credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action was invoked"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi

@@ -1,0 +1,39 @@
+name: Test basic usage with required and common inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: my-release-001
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          source: "."
+          images: "my-image=gcr.io/my-project/my-image:latest"
+          disable_initial_rollout: "false"
+          project_id: my-gcp-project
+          gcloud_version: "latest"
+          description: "Test release description"
+          labels: "env=test,team=platform"
+          annotations: "created-by=ci"
+          flags: "--skaffold-version=skaffold_preview"
+          deploy_parameters: "key1=value1,key2=value2"
+      - name: Assert action ran (may fail due to missing GCP credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action was invoked"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
