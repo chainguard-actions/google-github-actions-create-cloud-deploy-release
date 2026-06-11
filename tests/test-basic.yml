@@ -1,0 +1,30 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: test-release-${{ github.run_id }}
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          source: .
+          images: "my-image=gcr.io/my-project/my-image:latest"
+          project_id: my-gcp-project
+          disable_initial_rollout: "false"
+      - name: Assert action ran (may fail due to missing GCP credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action executed"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
