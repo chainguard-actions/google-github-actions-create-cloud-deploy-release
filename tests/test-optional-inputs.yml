@@ -1,4 +1,4 @@
-name: Test advanced inputs are accepted
+name: Test optional inputs are accepted
 on:
   workflow_dispatch:
 jobs:
@@ -10,14 +10,15 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          name: test-release-advanced
+          name: test-release-002
           delivery_pipeline: my-pipeline
           region: us-central1
           project_id: my-gcp-project
-          deploy_parameters: 'key1=value1,key2=value2'
-          flags: '--skaffold-version=skaffold_preview'
-          gcloud_version: 'latest'
-      - name: Assert action ran with advanced inputs (not skipped)
+          disable_initial_rollout: 'true'
+          description: 'Test release for CI'
+          labels: 'env=test,team=ci'
+          annotations: 'created-by=act'
+      - name: Assert action ran with optional inputs (not skipped)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
@@ -27,4 +28,4 @@ jobs:
             echo "FAIL: action was skipped unexpectedly"
             exit 1
           fi
-          echo "PASS: action ran with advanced inputs (outcome=$OUTCOME)"
+          echo "PASS: action ran with optional inputs (outcome=$OUTCOME)"

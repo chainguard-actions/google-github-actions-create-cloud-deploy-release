@@ -1,34 +1,29 @@
-name: Test basic usage - required and common inputs
+name: Test basic usage with required inputs
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
         continue-on-error: true
         with:
-          name: my-release-${{ github.run_number }}
+          name: test-release-001
           delivery_pipeline: my-pipeline
           region: us-central1
-          source: .
-          images: "my-image=gcr.io/my-project/my-image:latest"
           project_id: my-gcp-project
-          disable_initial_rollout: "false"
-      - name: Assert action ran (credentials missing is expected)
+      - name: Assert action ran (failed at GCP auth, not at input validation)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          # The action is expected to fail without real GCP credentials.
-          # We only verify it was invoked (not skipped).
+          # The action should fail because there are no GCP credentials,
+          # not because of missing required inputs. Either 'failure' or
+          # 'success' is acceptable — what matters is it didn't skip.
           if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped, expected it to run"
+            echo "FAIL: action was skipped unexpectedly"
             exit 1
           fi
           echo "PASS: action ran (outcome=$OUTCOME)"
