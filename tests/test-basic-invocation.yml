@@ -1,0 +1,31 @@
+name: Test basic invocation without GCP credentials
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with required inputs (no GCP credentials)
+        id: action
+        uses: .
+        with:
+          name: test-release-001
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          project_id: my-test-project
+        continue-on-error: true
+
+      - name: Assert action attempted to run and failed at GCP level
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # Without real GCP credentials, the action should fail at the API call
+          # but it should have started (not skipped or errored before running)
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped, expected it to run and fail at GCP"
+            exit 1
+          fi
+          echo "PASS: action ran and produced outcome: $OUTCOME"

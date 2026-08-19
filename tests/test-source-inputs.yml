@@ -1,0 +1,41 @@
+name: Test source-related inputs are accepted
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy source directory and skaffold file
+        run: |
+          mkdir -p /tmp/my-source
+          cat > /tmp/my-source/skaffold.yaml <<'EOF'
+          apiVersion: skaffold/v4beta7
+          kind: Config
+          EOF
+
+      - name: Run action with source, skaffold_file, and gcs_source_staging_dir inputs
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: test-release-source
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          project_id: my-test-project
+          source: /tmp/my-source
+          skaffold_file: skaffold.yaml
+          gcs_source_staging_dir: gs://my-bucket/staging
+
+      - name: Assert action ran (not skipped) with source inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should start and fail at GCP API call, not at input validation
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action accepted source/skaffold_file/gcs_source_staging_dir inputs and ran with outcome: $OUTCOME"

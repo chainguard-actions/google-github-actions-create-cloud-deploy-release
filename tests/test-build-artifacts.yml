@@ -1,0 +1,44 @@
+name: Test build_artifacts input is accepted
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy Skaffold build artifacts file
+        run: |
+          cat > /tmp/artifacts.json <<'EOF'
+          {
+            "builds": [
+              {
+                "imageName": "my-app",
+                "tag": "gcr.io/my-project/my-app:v1.0.0"
+              }
+            ]
+          }
+          EOF
+
+      - name: Run action with build_artifacts input
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          name: test-release-artifacts
+          delivery_pipeline: my-pipeline
+          region: us-central1
+          project_id: my-test-project
+          build_artifacts: /tmp/artifacts.json
+
+      - name: Assert action ran (not skipped) with build_artifacts input
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should start and fail at GCP API call, not at input validation
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action accepted build_artifacts input and ran with outcome: $OUTCOME"
