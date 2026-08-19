@@ -1,23 +1,22 @@
-name: Test basic - required inputs with no GCP credentials
+name: Test gcs_source_staging_dir input
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run action (expect failure - no GCP credentials)
+      - name: Run action with gcs_source_staging_dir input (expect failure - no GCP credentials)
         id: action
         uses: .
         with:
-          name: test-release-001
+          name: test-release-gcs-staging
           delivery_pipeline: my-pipeline
           region: us-central1
           project_id: my-test-project
+          images: 'my-image=gcr.io/my-project/my-image:latest'
+          gcs_source_staging_dir: gs://my-bucket/staging
         continue-on-error: true
 
       - name: Assert action failed due to missing credentials
@@ -29,4 +28,4 @@ jobs:
             echo "FAIL: expected action to fail without GCP credentials, got outcome=$OUTCOME"
             exit 1
           fi
-          echo "PASS: action correctly failed without GCP credentials"
+          echo "PASS: action correctly failed without GCP credentials (gcs_source_staging_dir input accepted)"

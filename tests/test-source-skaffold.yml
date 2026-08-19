@@ -1,23 +1,32 @@
-name: Test basic - required inputs with no GCP credentials
+name: Test source and skaffold_file inputs
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run action (expect failure - no GCP credentials)
+      - name: Create a dummy source directory and skaffold file
+        run: |
+          mkdir -p /tmp/my-source
+          cat > /tmp/my-source/skaffold.yaml <<'EOF'
+          apiVersion: skaffold/v3
+          kind: Config
+          metadata:
+            name: my-app
+          EOF
+
+      - name: Run action with source and skaffold_file inputs (expect failure - no GCP credentials)
         id: action
         uses: .
         with:
-          name: test-release-001
+          name: test-release-source
           delivery_pipeline: my-pipeline
           region: us-central1
           project_id: my-test-project
+          source: /tmp/my-source
+          skaffold_file: skaffold.yaml
         continue-on-error: true
 
       - name: Assert action failed due to missing credentials
@@ -29,4 +38,4 @@ jobs:
             echo "FAIL: expected action to fail without GCP credentials, got outcome=$OUTCOME"
             exit 1
           fi
-          echo "PASS: action correctly failed without GCP credentials"
+          echo "PASS: action correctly failed without GCP credentials (source and skaffold_file inputs accepted)"

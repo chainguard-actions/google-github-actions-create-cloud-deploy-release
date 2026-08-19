@@ -1,4 +1,4 @@
-name: Test basic - required inputs with no GCP credentials
+name: Test annotations and labels inputs
 on:
   workflow_dispatch:
 jobs:
@@ -10,14 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run action (expect failure - no GCP credentials)
+      - name: Run action with annotations and labels (expect failure - no GCP credentials)
         id: action
         uses: .
         with:
-          name: test-release-001
+          name: test-release-metadata
           delivery_pipeline: my-pipeline
           region: us-central1
           project_id: my-test-project
+          annotations: 'commit-sha=abc123,build-id=42'
+          labels: 'env=staging,team=platform'
+          description: 'Test release for CI validation'
         continue-on-error: true
 
       - name: Assert action failed due to missing credentials
